@@ -1,10 +1,11 @@
 # Auto Memory System Prompt
 
-本文件整理自 Claude Code 主 Agent 的 auto-memory 系统提示词，目标是提供一份**完整可读**的 prompt 存档。
+本文件是 `auto-memory` 主系统提示词的明确入口文件。
 
-- 来源主文件：`src/memdir/memdir.ts`
-- 补充常量：`src/memdir/memoryTypes.ts`
-- 适用场景：`loadMemoryPrompt()` 走到 **auto-memory 单目录模式** 时返回的主 prompt
+- **来源主文件**：`src/memdir/memdir.ts`
+- **补充常量**：`src/memdir/memoryTypes.ts`
+- **适用场景**：`loadMemoryPrompt()` 走到 **auto-memory 单目录模式** 时返回的主 prompt
+- **说明**：内容与 `00-system-prompt.md` 对应，这里使用更直观的文件名作为主入口
 
 ## 保留变量
 
@@ -150,4 +151,94 @@ Memory is one of several persistence mechanisms available to you as you assist t
 
 - 本文档对应的是 `buildMemoryLines('auto memory', autoDir, extraGuidelines, skipIndex)` 的主干内容。
 - 未展开的 `${memoryDir}` 与 `${MAX_ENTRYPOINT_LINES}` 属于必要变量，其余文本均尽量按最终 prompt 展开。
-- `extraGuidelines` 与 `Searching past context` 属于条件性附加段，未并入上面的“稳定主干 prompt”。如果需要，也可以后续补一份 `00-system-prompt-full-conditional.md`。 
+
+## 条件性附加段
+
+下面两段不是每次都会出现在最终系统提示词里，而是**按条件追加**。
+
+### 1. `extraGuidelines`
+
+#### 加入条件
+
+当环境变量 `CLAUDE_COWORK_MEMORY_EXTRA_GUIDELINES` 存在，且 `trim()` 后非空时，会把这段文本作为额外 guideline 追加到 prompt 末尾。
+
+对应源码逻辑：
+
+- 读取：`process.env.CLAUDE_COWORK_MEMORY_EXTRA_GUIDELINES`
+- 条件：`coworkExtraGuidelines && coworkExtraGuidelines.trim().length > 0`
+- 注入位置：`## Memory and other forms of persistence` 章节之后
+
+#### 内容形式
+
+这一段**没有固定文案**，会把环境变量中的文本原样作为一个独立段落插入。
+
+可以理解为：
+
+```markdown
+## Memory and other forms of persistence
+...
+
+${process.env.CLAUDE_COWORK_MEMORY_EXTRA_GUIDELINES}
+```
+
+也就是说，这部分内容取决于运行环境，不是 `memdir.ts` 里写死的静态 prompt 文本。
+
+### 2. `Searching past context`
+
+#### 加入条件
+
+当特性开关 `tengu_coral_fern` 为 `true` 时，会在 prompt 末尾追加一个 `## Searching past context` 章节。
+
+对应源码逻辑：
+
+- 判定函数：`getFeatureValue_CACHED_MAY_BE_STALE('tengu_coral_fern', false)`
+- 若返回 `false`：这一整段不会出现
+- 若返回 `true`：追加完整章节
+
+#### 章节内容
+
+这一段的文案主体固定，但其中的搜索命令会根据当前运行环境切换。
+
+##### 情况 A：普通环境
+
+当 **没有** embedded search tools，且 **不是** REPL mode 时：
+
+```markdown
+## Searching past context
+
+When looking for past context:
+1. Search topic files in your memory directory:
+```
+`Grep with pattern="<search term>" path="${memoryDir}" glob="*.md"`
+```
+2. Session transcript logs (last resort — large files, slow):
+```
+`Grep with pattern="<search term>" path="${projectDir}/" glob="*.jsonl"`
+```
+Use narrow search terms (error messages, file paths, function names) rather than broad keywords.
+```
+
+##### 情况 B：embedded search tools 或 REPL mode
+
+当 `hasEmbeddedSearchTools() || isReplModeEnabled()` 为 `true` 时，会改成 shell `grep` 形式：
+
+```markdown
+## Searching past context
+
+When looking for past context:
+1. Search topic files in your memory directory:
+```
+`grep -rn "<search term>" ${memoryDir} --include="*.md"`
+```
+2. Session transcript logs (last resort — large files, slow):
+```
+`grep -rn "<search term>" ${projectDir}/ --include="*.jsonl"`
+```
+Use narrow search terms (error messages, file paths, function names) rather than broad keywords.
+```
+
+#### 补充说明
+
+- `${projectDir}` 来自 `getProjectDir(getOriginalCwd())`
+- `${memoryDir}` 在 auto-memory 单目录模式下就是 auto memory 根目录
+- 这一段会被追加在 prompt 最末尾

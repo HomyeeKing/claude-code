@@ -1,24 +1,43 @@
 # Auto Memory Prompts
 
-本目录用于存放 Claude Code `auto-memory` 相关的 prompt 文档，目标是同时满足两种阅读方式：
+本目录用于存放 Claude Code `auto-memory` 相关的 prompt 文档。
 
-- **读完整 prompt**：直接查看一份完整的主系统提示词
-- **按主题拆解**：查看各个主题段落的职责与来源
+为了让目录结构更直观，当前把文件分成两类：
 
-## 阅读入口
+- **核心入口文件**：直接回答“系统提示词是什么”“四种主题 prompt 分别是什么”
+- **补充拆解文件**：保留更细颗粒度的章节化说明，便于继续分析源码
 
-- **完整主 prompt**：[`00-system-prompt.md`](./00-system-prompt.md)
-- **主题拆分文件**：`01` 到 `08`
+## 核心入口
 
-如果你只是想知道 auto-memory 在主 Agent 里到底收到什么提示词，优先看 `00-system-prompt.md`。
+如果你只想快速找到最重要的文件，优先看下面 5 个：
+
+- **系统提示词文件**：[`auto-memory-system-prompt.md`](./auto-memory-system-prompt.md)
+- **主题 prompt - user**：[`topic-user-prompt.md`](./topic-user-prompt.md)
+- **主题 prompt - feedback**：[`topic-feedback-prompt.md`](./topic-feedback-prompt.md)
+- **主题 prompt - project**：[`topic-project-prompt.md`](./topic-project-prompt.md)
+- **主题 prompt - reference**：[`topic-reference-prompt.md`](./topic-reference-prompt.md)
+
+如果你只是想知道 auto-memory 在主 Agent 里到底收到什么提示词，优先看 `auto-memory-system-prompt.md`。
 
 ## 文件结构
 
+### 核心入口文件
+
 | 文件 | 类型 | 说明 |
 |------|------|------|
-| [00-system-prompt.md](./00-system-prompt.md) | 完整 prompt | 主 Agent 的 auto-memory system prompt 汇总版，尽量展开最终文案，仅保留必要变量 |
+| [auto-memory-system-prompt.md](./auto-memory-system-prompt.md) | 完整 prompt | 主 Agent 的 auto-memory system prompt 汇总版，尽量展开最终文案，仅保留必要变量 |
+| [topic-user-prompt.md](./topic-user-prompt.md) | 主题 prompt | `user` 主题的独立 prompt 文件 |
+| [topic-feedback-prompt.md](./topic-feedback-prompt.md) | 主题 prompt | `feedback` 主题的独立 prompt 文件 |
+| [topic-project-prompt.md](./topic-project-prompt.md) | 主题 prompt | `project` 主题的独立 prompt 文件 |
+| [topic-reference-prompt.md](./topic-reference-prompt.md) | 主题 prompt | `reference` 主题的独立 prompt 文件 |
+
+### 补充拆解文件
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| [00-system-prompt.md](./00-system-prompt.md) | 兼容保留 | 旧版编号入口，内容与新的系统提示词文件对应 |
 | [01-base-opener.md](./01-base-opener.md) | 主题 prompt | 基础提示 / subagent opener |
-| [02-memory-types.md](./02-memory-types.md) | 主题 prompt | 四种核心记忆类型：`user`、`feedback`、`project`、`reference` |
+| [02-memory-types.md](./02-memory-types.md) | 汇总 prompt | 四种核心记忆类型的合并版，便于横向对照 |
 | [03-what-not-to-save.md](./03-what-not-to-save.md) | 主题 prompt | 哪些内容不应该保存为记忆 |
 | [04-how-to-save.md](./04-how-to-save.md) | 主题 prompt | 如何写入主题文件和更新索引 |
 | [05-frontmatter-example.md](./05-frontmatter-example.md) | 主题 prompt | 记忆文件的 YAML frontmatter 格式规范 |
@@ -46,7 +65,7 @@
 
 ### 1. 完整主 Prompt
 
-`00-system-prompt.md` 是本目录的主入口，目标是：
+`auto-memory-system-prompt.md` 是本目录的主入口，目标是：
 
 - 尽量还原主 Agent 实际使用的 auto-memory prompt
 - 尽量展开静态文案
@@ -54,7 +73,14 @@
 
 ### 2. 主题拆分 Prompt
 
-`01` 到 `08` 保留为按主题拆分的文档，方便：
+四种核心主题现在分别拆成独立文件：
+
+- `topic-user-prompt.md`
+- `topic-feedback-prompt.md`
+- `topic-project-prompt.md`
+- `topic-reference-prompt.md`
+
+此外，`01` 到 `08` 这组文件继续保留为补充拆解文档，方便：
 
 - 单独分析某段 prompt 的语义
 - 对照源码常量与分段设计
@@ -76,15 +102,15 @@
 
 - **主 Agent 的 auto-memory system prompt**
   - 主要来自 `src/memdir/memdir.ts`
-  - 本目录现在以 `00-system-prompt.md` 作为完整存档入口
+  - 本目录现在以 `auto-memory-system-prompt.md` 作为完整存档入口
 
 - **memory extraction / consolidation 相关 prompt**
   - 例如 `src/services/extractMemories/prompts.ts`
   - 它们和 auto-memory 强相关，但不是主 Agent 的同一份系统提示词
 
-因此，`01-base-opener.md` 这类文件更偏向子流程 prompt；`00-system-prompt.md` 则对应你最关心的“完整主 prompt”。
+因此，`01-base-opener.md` 这类文件更偏向子流程 prompt；`auto-memory-system-prompt.md` 则对应你最关心的“完整主 prompt”。
 
 ## 相关文档
 
-- [记忆系统架构总览](../memory-system-architecture.md)
-- [记忆主题提取机制](../memory-topic-extraction.md)
+- [记忆系统架构总览](../../memory-system/memory-system-architecture.md)
+- [记忆主题提取机制](../../memory-system/memory-topic-extraction.md)
